@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
+// ── COLORS ────────────────────────────────────────────────────
 const C = {
   bg: "#07070F",
   card: "#0F0F1C",
@@ -14,8 +15,12 @@ const C = {
   green: "#2ECC71",
   tag: "#161624",
   red: "#E74C3C",
+  orange: "#E67E22",
+  purple: "#9B59B6",
+  yellow: "#F39C12",
 };
 
+// ── ANIMATIONS ────────────────────────────────────────────────
 const ANIM = `
   * { box-sizing: border-box; margin: 0; padding: 0; }
   ::-webkit-scrollbar { width: 0; }
@@ -31,6 +36,10 @@ const ANIM = `
     0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
     40% { transform: translateY(-5px); opacity: 1; }
   }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
   .fu  { animation: fadeUp 0.5s ease both; }
   .fu1 { animation: fadeUp 0.5s ease 0.1s both; }
   .fu2 { animation: fadeUp 0.5s ease 0.2s both; }
@@ -39,21 +48,103 @@ const ANIM = `
   .fu5 { animation: fadeUp 0.5s ease 0.5s both; }
   .fu6 { animation: fadeUp 0.5s ease 0.6s both; }
   .glowpulse { animation: glow 2.5s ease-in-out infinite; }
+  .fadein { animation: fadeIn 0.4s ease both; }
 `;
 
-function Blue({ children }) {
-  return <span style={{ color: C.blue2 }}>{children}</span>;
-}
-function Label({ children }) {
-  return (
-    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", color: C.blue, textTransform: "uppercase", marginBottom: 16 }}>
-      {children}
-    </div>
-  );
-}
-function Divider() {
-  return <div style={{ width: 36, height: 2, background: `linear-gradient(90deg,${C.blue},${C.blue2})`, borderRadius: 2, margin: "14px 0" }} />;
-}
+// ── SYNTHETIC DATA ────────────────────────────────────────────
+const ARTIST = { name: "Nia", genre: "R&B / Neo-Soul", members: 2340, revenue: 4280, retention: 94.2, growth: 6.4 };
+
+const AGENTS = [
+  { id: "DOLLAR", emoji: "💰", role: "Revenue", color: C.green },
+  { id: "SCOUT",  emoji: "🔍", role: "Deals",   color: "#3498DB" },
+  { id: "COMPASS",emoji: "🧭", role: "Strategy", color: C.purple },
+  { id: "PULSE",  emoji: "📊", role: "Fans",     color: C.red },
+  { id: "HYPE",   emoji: "📣", role: "Content",  color: C.yellow },
+];
+
+const CONVERSATIONS = {
+  DOLLAR: [
+    { from: "agent", text: "Your top revenue source this month is direct memberships at $2,840. Merch is second at $1,120. No label split." },
+    { from: "agent", text: "Projected Q2 revenue: $14,200. That\u2019s 22% above last quarter with no additional spend." },
+  ],
+  SCOUT: [
+    { from: "agent", text: "Lumina Headphones wants a 90-day ambassador deal. Offer is $8,500 + product. Their audience skews 18-25, 62% overlap with yours." },
+    { from: "agent", text: "I flagged a sync licensing opportunity for \u2018Midnight Hour.\u2019 TV placement, cable drama, est. $3,200." },
+  ],
+  COMPASS: [
+    { from: "agent", text: "Your next milestone: hit 3,000 members before your EP drops. You\u2019re 660 away. At current growth, that\u2019s 5\u20136 weeks." },
+    { from: "agent", text: "Recommendation: move the Manila show from September to August. Your Philippines audience peaks in summer." },
+  ],
+  PULSE: [
+    { from: "agent", text: "Top 3 cities this week: Los Angeles, Manila, Ho Chi Minh City. Vietnam grew 19% with zero paid promotion." },
+    { from: "agent", text: "Your core demo shifted: 22\u201328 now leads at 41%, up from 35% last quarter. They spend 2.3\u00d7 more on merch." },
+  ],
+  HYPE: [
+    { from: "agent", text: "Your cover of \u2018Golden Hour\u2019 has 12,400 saves \u2014 3.2\u00d7 your average. Posting another cover this month would capitalize on the momentum." },
+    { from: "agent", text: "Content calendar: Tuesday reel (behind-the-scenes), Thursday cover drop, Saturday member-only livestream." },
+  ],
+};
+
+const FOLLOW_UPS = {
+  DOLLAR: "Your merch margin is 68% after fulfillment costs. If you shift to print-on-demand for the lower-volume items, that goes to 74%. Want me to model it?",
+  SCOUT: "The Lumina deal has a 48-hour response window. Based on your brand alignment score (8.2/10) and audience overlap, I recommend accepting with a counter on exclusivity.",
+  COMPASS: "If you hit 3,000 members before the EP, you\u2019ll have enough data to prove the direct-to-fan model works at scale. That\u2019s your seed narrative.",
+  PULSE: "Maya R. hits her 1-year anniversary tomorrow. She\u2019s in your top 2% for engagement. I drafted a personalized voice note \u2014 want to review it?",
+  HYPE: "Optimal post time for your audience: Thursday 7pm EST. That\u2019s when your 22\u201328 demo is most active. I\u2019ve scheduled the cover drop.",
+};
+
+const NOTIFICATIONS = [
+  { agent: "SCOUT", title: "Brand deal response deadline tomorrow", desc: "Lumina Headphones \u2014 $8,500 ambassador deal. SCOUT recommends accepting with exclusivity counter.", time: "1h ago", isNew: true },
+  { agent: "PULSE", title: "Vietnam streaming milestone", desc: "You crossed 10K monthly listeners in Vietnam. 19% week-over-week growth, entirely organic.", time: "3h ago", isNew: true },
+  { agent: "DOLLAR", title: "March revenue report ready", desc: "Total: $4,280. Memberships: $2,840 (+18%). Merch: $1,120. Sync: $320.", time: "5h ago", isNew: true },
+  { agent: "HYPE", title: "Cover video rendered and scheduled", desc: "\u2018Golden Hour\u2019 cover drops Thursday 7pm EST. Thumbnail A/B test ready.", time: "Yesterday", isNew: false },
+  { agent: "COMPASS", title: "Quarterly strategy doc updated", desc: "Key focus: hit 3K members before EP drop. Manila show timing recommendation included.", time: "Yesterday", isNew: false },
+  { agent: "DOLLAR", title: "New member: Jordan T. from Chicago", desc: "Joined via your Instagram link. Premium tier. Estimated LTV: $180.", time: "2 days ago", isNew: false },
+  { agent: "PULSE", title: "Fan anniversary: Maya R. \u2014 1 year", desc: "Top 2% engagement. Voice note draft ready for review.", time: "2 days ago", isNew: false },
+  { agent: "SCOUT", title: "Sync inquiry archived", desc: "\u2018Neon Dusk\u2019 for indie film \u2014 no response from licensor after 14 days. Auto-archived.", time: "3 days ago", isNew: false },
+];
+
+const DEALS = {
+  inbox: [
+    { name: "Lumina Headphones", type: "Ambassador", amount: "$8,500", agent: "SCOUT", status: "Awaiting review", color: C.blue },
+    { name: "Sync: \u2018Midnight Hour\u2019", type: "TV Placement", amount: "$3,200", agent: "SCOUT", status: "SCOUT recommends", color: C.green },
+  ],
+  active: [
+    { name: "Manila Festival", type: "Performance", amount: "$5,000", agent: "SCOUT", status: "Contract sent", color: C.orange },
+    { name: "Studio Mura Collab", type: "Merch", amount: "Rev share TBD", agent: "DOLLAR", status: "Sampling", color: C.purple },
+  ],
+  closed: [
+    { name: "Greenline Coffee", type: "Sponsorship", amount: "$2,200", agent: "SCOUT", status: "Completed", color: C.muted },
+    { name: "Portland Venue", type: "Guarantee", amount: "$3,800", agent: "SCOUT", status: "Completed", color: C.muted },
+    { name: "Fan Memberships", type: "Recurring", amount: "$2,840/mo", agent: "DOLLAR", status: "Active", color: C.green },
+  ],
+};
+
+const FAN_CITIES = [
+  { city: "Los Angeles", count: 340, pct: 100 },
+  { city: "Manila", count: 280, pct: 82 },
+  { city: "Ho Chi Minh City", count: 195, pct: 57 },
+  { city: "New York", count: 170, pct: 50 },
+  { city: "London", count: 145, pct: 43 },
+];
+
+const FAN_SPOTLIGHT = [
+  { name: "Maya R.", detail: "1-year anniversary tomorrow. Top 2% engagement. MAWD drafted a voice note.", emoji: "🎂" },
+  { name: "Jordan T.", detail: "Joined 3 days ago from Chicago. Already purchased merch. Premium tier.", emoji: "⭐" },
+  { name: "Alex K.", detail: "11 months. Shared your music 47 times. Potential ambassador candidate.", emoji: "📣" },
+];
+
+const REVENUE_MONTHS = [
+  { label: "Sep", val: 2100 },
+  { label: "Oct", val: 2400 },
+  { label: "Nov", val: 2850 },
+  { label: "Dec", val: 3100 },
+  { label: "Jan", val: 3400 },
+  { label: "Feb", val: 3820 },
+  { label: "Mar", val: 4280 },
+];
+
+// ── PRIMITIVES ────────────────────────────────────────────────
 function Card({ children, accent, style: s, className }) {
   return (
     <div className={className} style={{
@@ -63,500 +154,621 @@ function Card({ children, accent, style: s, className }) {
     }}>{children}</div>
   );
 }
-function Btn({ onClick, children }) {
+
+function Badge({ children, color }) {
   return (
-    <button onClick={onClick} style={{
-      width: "100%",
-      background: `linear-gradient(135deg, ${C.blue}, ${C.blue2})`,
-      color: C.bg, border: "none", borderRadius: 30,
-      padding: "14px", fontSize: 14, fontWeight: 800,
-      cursor: "pointer", letterSpacing: "0.02em",
-      boxShadow: `0 4px 24px ${C.blue}44`,
-      fontFamily: "'DM Sans', system-ui",
-    }}>{children}</button>
+    <span style={{
+      display: "inline-block", fontSize: 10, fontWeight: 700,
+      color: color || C.blue, background: (color || C.blue) + "18",
+      padding: "3px 8px", borderRadius: 6, letterSpacing: "0.03em",
+    }}>{children}</span>
   );
 }
+
 function Dots() {
   return (
     <div style={{ display: "flex", gap: 5, padding: "4px 0" }}>
       {[0,1,2].map(i => (
         <div key={i} style={{
           width: 5, height: 5, borderRadius: "50%", background: C.blue,
-          animation: `dot 1.2s ease ${i*0.2}s infinite`,
+          animation: `dot 1.2s ease ${i * 0.2}s infinite`,
         }}/>
       ))}
     </div>
   );
 }
 
-// ── SCREEN 0 — Opening Statement ──────────────────────────────
-function S0({ next }) {
+function Typewriter({ text, speed = 16, onDone }) {
+  const [displayed, setDisplayed] = useState("");
+  const [isDone, setIsDone] = useState(false);
+  useEffect(() => {
+    setDisplayed(""); setIsDone(false);
+    let i = 0;
+    const iv = setInterval(() => {
+      setDisplayed(text.slice(0, i + 1)); i++;
+      if (i >= text.length) { clearInterval(iv); setIsDone(true); onDone && onDone(); }
+    }, speed);
+    return () => clearInterval(iv);
+  }, [text]);
+  return <span>{displayed}{!isDone && <span style={{ opacity: 0.5 }}>|</span>}</span>;
+}
+
+function AgentTag({ agent, small }) {
+  const a = AGENTS.find(x => x.id === agent);
+  if (!a) return null;
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", padding:"0 28px", textAlign:"center" }}>
-      <div className="fu1" style={{ fontSize: 10, letterSpacing: "0.2em", color: C.blue, fontWeight: 700, textTransform: "uppercase", marginBottom: 28 }}>
-        Fanded · Pre-Seed
-      </div>
-
-      <div className="fu2 glowpulse" style={{
-        width: 68, height: 68, borderRadius: 18,
-        background: `linear-gradient(135deg, ${C.blue}, ${C.blue2})`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: 30, marginBottom: 28,
-      }}>🤖</div>
-
-      <h1 className="fu3" style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: 30, fontWeight: 900, color: C.cream,
-        lineHeight: 1.12, letterSpacing: "-0.02em", margin: "0 0 18px",
-      }}>
-        The future of artist<br />&amp; athlete management<br />
-        <Blue>is self-managed.</Blue>
-      </h1>
-
-      <p className="fu4" style={{ fontSize: 14, color: C.dim, lineHeight: 1.65, margin: "0 0 32px", maxWidth: 300 }}>
-        Powered by agentic AI.<br />
-        We&apos;re building the infrastructure.<br />
-        <span style={{ color: C.cream }}>It&apos;s already working.</span>
-      </p>
-
-      <div className="fu5" style={{ width: "100%" }}>
-        <Btn onClick={next}>See How It Works →</Btn>
-      </div>
-    </div>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: small ? 4 : 6 }}>
+      <span style={{ fontSize: small ? 12 : 14 }}>{a.emoji}</span>
+      <span style={{ fontSize: small ? 10 : 11, fontWeight: 800, color: a.color, letterSpacing: "0.05em" }}>{a.id}</span>
+    </span>
   );
 }
 
-// ── SCREEN 1 — The Problem ────────────────────────────────────
-function S1({ next }) {
+// ── TAB 0: HOME ───────────────────────────────────────────────
+function HomeTab() {
+  const [briefingDone, setBriefingDone] = useState(false);
+  const briefing = "Your Vietnam streaming is up 23% week-over-week. SCOUT flagged a brand deal worth reviewing. Two fan anniversaries tomorrow \u2014 drafts are ready.";
+
   return (
-    <div style={{ padding:"32px 24px 100px", overflowY:"auto", height:"100%" }}>
-      <Label>The Problem</Label>
-      <h2 className="fu2" style={{
-        fontFamily: "'Playfair Display', serif",
-        fontSize: 26, fontWeight: 900, color: C.cream,
-        lineHeight: 1.15, margin: "0 0 6px",
-      }}>
-        The artist builds<br />the audience.<br />
-        <Blue>Everyone else captures the value.</Blue>
-      </h2>
-      <Divider />
+    <div style={{ padding: "24px 20px 100px", overflowY: "auto", height: "100%" }}>
+      {/* Greeting */}
+      <div className="fu1">
+        <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>March 22, 2026</div>
+        <h1 style={{
+          fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900,
+          color: C.cream, lineHeight: 1.15, margin: "0 0 20px",
+        }}>
+          Good evening, <span style={{ color: C.blue2 }}>Nia.</span>
+        </h1>
+      </div>
 
-      <p className="fu3" style={{ fontSize: 13, color: C.dim, lineHeight: 1.65, marginBottom: 20 }}>
-        Talent has always had the best customer acquisition economics in the world — audiences built at zero marginal cost, over decades of performing. Streaming platforms captured that relationship. Management takes a third of what&apos;s left.
-      </p>
-
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+      {/* Stats */}
+      <div className="fu2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
         {[
-          { who:"Label deal",      take:"80%",   note:"of recorded music revenue", color: C.red },
-          { who:"Management",      take:"15–20%", note:"of gross income", color:"#E67E22" },
-          { who:"Booking agent",   take:"10%",   note:"per live appearance", color:"#F39C12" },
-          { who:"Publisher",       take:"25%",   note:"of composition rights", color:"#8E44AD" },
-          { who:"Artist keeps",    take:"~9¢",   note:"on the dollar", color: C.blue2 },
-        ].map((r, i) => (
-          <div key={i} className="fu" style={{ animationDelay:`${0.25+i*0.09}s` }}>
-            <Card>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <div>
-                  <div style={{ fontSize:13, color:C.cream, fontWeight:700 }}>{r.who}</div>
-                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{r.note}</div>
-                </div>
-                <div style={{ fontSize:22, fontWeight:900, color:r.color }}>{r.take}</div>
-              </div>
-            </Card>
-          </div>
+          { v: "$4,280", l: "Mo. Revenue", s: "+18%", c: C.blue2 },
+          { v: "2,340", l: "Members", s: "+142", c: C.green },
+          { v: "94.2%", l: "Retention", s: "3.8\u00d7 avg", c: C.blue },
+        ].map((s, i) => (
+          <Card key={i} style={{ textAlign: "center", padding: "14px 8px" }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</div>
+            <div style={{ fontSize: 10, color: C.green, fontWeight: 600, marginTop: 2 }}>{s.s}</div>
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{s.l}</div>
+          </Card>
         ))}
       </div>
 
-      <Card accent style={{ marginTop:16 }} className="fu6">
-        <p style={{ fontSize:13, color:C.dim, lineHeight:1.65 }}>
-          Streaming platforms didn&apos;t build audiences. Artists did. The platform just owned the relationship.<br /><br />
-          <span style={{ color:C.cream, fontWeight:700 }}>Fanded returns the relationship — and its economics — directly to talent.</span>
+      {/* MAWD Briefing */}
+      <Card accent className="fu3" style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: 7,
+            background: `linear-gradient(135deg, ${C.blue}, ${C.blue2})`,
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
+          }}>🤖</div>
+          <span style={{ fontSize: 11, fontWeight: 800, color: C.blue, letterSpacing: "0.05em" }}>MAWD BRIEFING</span>
+        </div>
+        <p style={{ fontSize: 13, color: C.cream, lineHeight: 1.65 }}>
+          <Typewriter text={briefing} onDone={() => setBriefingDone(true)} />
         </p>
       </Card>
 
-      <div style={{ marginTop:20 }}><Btn onClick={next}>Meet MAWD →</Btn></div>
+      {/* Revenue Chart */}
+      <Card className="fu4" style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: "0.05em" }}>REVENUE TREND</div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+          {REVENUE_MONTHS.map((m, i) => {
+            const maxVal = 4280;
+            const h = (m.val / maxVal) * 70;
+            return (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div style={{ fontSize: 9, color: C.dim, fontWeight: 600 }}>${(m.val / 1000).toFixed(1)}k</div>
+                <div style={{
+                  width: "100%", height: h, borderRadius: 4,
+                  background: i === REVENUE_MONTHS.length - 1
+                    ? `linear-gradient(180deg, ${C.blue}, ${C.blue2})`
+                    : C.border,
+                }} />
+                <div style={{ fontSize: 9, color: C.muted }}>{m.label}</div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Activity Feed */}
+      <div className="fu5" style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 10, letterSpacing: "0.05em" }}>RECENT ACTIVITY</div>
+      {[
+        { agent: "DOLLAR", text: "Membership revenue crossed $4K for the first time", time: "2h ago" },
+        { agent: "SCOUT", text: "New brand inquiry \u2014 Lumina Headphones", time: "5h ago" },
+        { agent: "HYPE", text: "Cover video scheduled for Thursday 7pm EST", time: "Yesterday" },
+        { agent: "COMPASS", text: "Quarterly strategy update ready for review", time: "Yesterday" },
+      ].map((item, i) => (
+        <Card key={i} className="fu" style={{ animationDelay: `${0.5 + i * 0.08}s`, marginBottom: 8, padding: "12px 14px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1 }}>
+              <AgentTag agent={item.agent} small />
+              <span style={{ fontSize: 12, color: C.cream, flex: 1 }}>{item.text}</span>
+            </div>
+            <span style={{ fontSize: 10, color: C.muted, flexShrink: 0, marginLeft: 8 }}>{item.time}</span>
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }
 
-// ── SCREEN 2 — MAWD ───────────────────────────────────────────
-function S2({ next }) {
-  const [active, setActive] = useState(null);
-  const [text, setText] = useState("");
+// ── TAB 1: MAWD CHAT ──────────────────────────────────────────
+function MawdTab() {
+  const [activeAgent, setActiveAgent] = useState("DOLLAR");
+  const [messages, setMessages] = useState({});
   const [typing, setTyping] = useState(false);
-  const [done, setDone] = useState(false);
+  const [inputVal, setInputVal] = useState("");
+  const scrollRef = useRef(null);
 
-  const agents = [
-    { id:"DOLLAR", emoji:"💰", role:"Revenue intelligence",
-      color:"#2ECC71",
-      line:"Membership revenue is up 12% with zero new marketing spend. Your music is doing the CAC work. No label split. No manager cut." },
-    { id:"SCOUT",  emoji:"🔍", role:"Deal & opportunity finder",
-      color:"#3498DB",
-      line:"Brand partnership inquiry flagged — CPG company with Vietnam distribution. Matches your 12% Southeast Asia audience growth. Draft response ready for review." },
-    { id:"COMPASS",emoji:"🧭", role:"Career strategy",
-      color:"#9B59B6",
-      line:"Next 90 days: validate MAWD with 3 installs, close Cal State LA enterprise deal, then raise seed on real traction. This is the arc that closes checks." },
-    { id:"PULSE",  emoji:"📊", role:"Fan & audience analytics",
-      color:C.red,
-      line:"96% retention. 4× industry average. Vietnam listeners up 12% organically. Someone over there is sharing your music — no ads, no push." },
-    { id:"HYPE",   emoji:"📣", role:"Content & marketing ops",
-      color:"#F39C12",
-      line:"Cover content outperforms originals 3:1 on saves across 6 months of data. One cover per month — interpreted standards. Scheduled for peak engagement window." },
-  ];
+  const getMessages = () => messages[activeAgent] || CONVERSATIONS[activeAgent] || [];
 
-  const tap = (a) => {
-    setActive(a.id); setTyping(true); setText(""); setDone(false);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [activeAgent, messages, typing]);
+
+  const handleSend = () => {
+    if (typing) return;
+    const current = [...getMessages()];
+    const userMsg = inputVal.trim() || "Tell me more";
+    current.push({ from: "user", text: userMsg });
+    setMessages(prev => ({ ...prev, [activeAgent]: current }));
+    setInputVal("");
+    setTyping(true);
+
     setTimeout(() => {
+      const followUp = FOLLOW_UPS[activeAgent];
+      setMessages(prev => ({
+        ...prev,
+        [activeAgent]: [...(prev[activeAgent] || current), { from: "agent", text: followUp }],
+      }));
       setTyping(false);
-      let i = 0;
-      const iv = setInterval(() => {
-        setText(a.line.slice(0, i+1)); i++;
-        if (i >= a.line.length) { clearInterval(iv); setDone(true); }
-      }, 16);
-    }, 800);
+    }, 1200);
   };
 
-  const cur = agents.find(a => a.id === active);
+  const cur = AGENTS.find(a => a.id === activeAgent);
 
   return (
-    <div style={{ padding:"32px 24px 100px", overflowY:"auto", height:"100%" }}>
-      <Label>The Solution</Label>
-      <h2 className="fu2" style={{
-        fontFamily:"'Playfair Display', serif",
-        fontSize:24, fontWeight:900, color:C.cream,
-        lineHeight:1.15, margin:"0 0 6px",
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Agent selector */}
+      <div style={{
+        display: "flex", gap: 6, padding: "12px 16px", overflowX: "auto",
+        borderBottom: `1px solid ${C.border}`, flexShrink: 0,
       }}>
-        MAWD — your AI<br />
-        <Blue>Chief of Staff.</Blue><br />
-        5 specialist agents. One brain.
-      </h2>
-      <p className="fu3" style={{ fontSize:13, color:C.dim, lineHeight:1.6, margin:"8px 0 20px" }}>
-        Not a chatbot. A private, sandboxed AI system trained on each talent&apos;s proprietary data — catalog, contracts, audience, income. Tap an agent.
-      </p>
+        {AGENTS.map(a => (
+          <button key={a.id} onClick={() => setActiveAgent(a.id)} style={{
+            display: "flex", alignItems: "center", gap: 5,
+            padding: "7px 12px", borderRadius: 20, border: "none", cursor: "pointer",
+            background: activeAgent === a.id ? a.color + "20" : C.tag,
+            outline: activeAgent === a.id ? `1px solid ${a.color}55` : `1px solid ${C.border}`,
+            flexShrink: 0,
+          }}>
+            <span style={{ fontSize: 13 }}>{a.emoji}</span>
+            <span style={{ fontSize: 10, fontWeight: 700, color: activeAgent === a.id ? a.color : C.muted, letterSpacing: "0.04em" }}>{a.id}</span>
+          </button>
+        ))}
+      </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
-        {agents.map((a, i) => (
-          <div key={a.id} onClick={() => tap(a)}
-            className="fu" style={{ animationDelay:`${0.15+i*0.08}s`, cursor:"pointer" }}>
+      {/* Chat messages */}
+      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 16px 8px" }}>
+        {/* Agent intro */}
+        <div className="fadein" style={{ textAlign: "center", margin: "8px 0 20px" }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10, margin: "0 auto 8px",
+            background: `linear-gradient(135deg, ${C.blue}, ${C.blue2})`,
+            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20,
+          }}>🤖</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: cur.color, letterSpacing: "0.06em" }}>MAWD · {cur.id}</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{cur.role} Agent</div>
+        </div>
+
+        {getMessages().map((msg, i) => (
+          <div key={`${activeAgent}-${i}`} style={{
+            display: "flex", justifyContent: msg.from === "user" ? "flex-end" : "flex-start",
+            marginBottom: 10,
+          }}>
             <div style={{
-              background: active===a.id ? "#0C1020" : C.tag,
-              border:`1px solid ${active===a.id ? a.color+"66" : C.border}`,
-              borderRadius:12, padding:"12px 14px",
-            }}>
-              <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4 }}>
-                <span style={{ fontSize:15 }}>{a.emoji}</span>
-                <span style={{ fontSize:11, fontWeight:800, color:active===a.id ? a.color : C.cream, letterSpacing:"0.05em" }}>{a.id}</span>
+              maxWidth: "85%", padding: "10px 14px", borderRadius: 14,
+              background: msg.from === "user" ? C.blue + "22" : C.card,
+              border: `1px solid ${msg.from === "user" ? C.blue + "44" : C.border}`,
+              fontSize: 13, color: C.cream, lineHeight: 1.6,
+              borderBottomRightRadius: msg.from === "user" ? 4 : 14,
+              borderBottomLeftRadius: msg.from === "user" ? 14 : 4,
+            }}>{msg.text}</div>
+          </div>
+        ))}
+
+        {typing && (
+          <div style={{ display: "flex", marginBottom: 10 }}>
+            <div style={{
+              padding: "10px 14px", borderRadius: 14, borderBottomLeftRadius: 4,
+              background: C.card, border: `1px solid ${C.border}`,
+            }}><Dots /></div>
+          </div>
+        )}
+      </div>
+
+      {/* Input bar */}
+      <div style={{
+        display: "flex", gap: 8, padding: "10px 16px 68px",
+        borderTop: `1px solid ${C.border}`, flexShrink: 0,
+      }}>
+        <input
+          value={inputVal}
+          onChange={e => setInputVal(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && handleSend()}
+          placeholder="Ask MAWD anything..."
+          style={{
+            flex: 1, background: C.tag, border: `1px solid ${C.border}`,
+            borderRadius: 20, padding: "10px 16px", fontSize: 13,
+            color: C.cream, outline: "none", fontFamily: "'DM Sans', system-ui",
+          }}
+        />
+        <button onClick={handleSend} style={{
+          width: 38, height: 38, borderRadius: "50%",
+          background: `linear-gradient(135deg, ${C.blue}, ${C.blue2})`,
+          border: "none", cursor: "pointer", display: "flex",
+          alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0,
+        }}>↑</button>
+      </div>
+    </div>
+  );
+}
+
+// ── TAB 2: ALERTS ─────────────────────────────────────────────
+function AlertsTab() {
+  const [expanded, setExpanded] = useState(null);
+
+  return (
+    <div style={{ padding: "24px 20px 100px", overflowY: "auto", height: "100%" }}>
+      <div className="fu1" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: C.cream }}>Alerts</h2>
+        <Badge color={C.blue}>{NOTIFICATIONS.filter(n => n.isNew).length} NEW</Badge>
+      </div>
+
+      {NOTIFICATIONS.map((n, i) => {
+        const agent = AGENTS.find(a => a.id === n.agent);
+        const isOpen = expanded === i;
+        return (
+          <div key={i} className="fu" style={{ animationDelay: `${0.1 + i * 0.05}s` }}>
+            <Card
+              style={{ marginBottom: 8, padding: "12px 14px", cursor: "pointer" }}
+              accent={n.isNew}
+            >
+              <div onClick={() => setExpanded(isOpen ? null : i)}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div style={{ display: "flex", gap: 10, flex: 1 }}>
+                    {n.isNew && <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.blue, marginTop: 5, flexShrink: 0 }} />}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <AgentTag agent={n.agent} small />
+                        <span style={{ fontSize: 10, color: C.muted }}>{n.time}</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: C.cream, fontWeight: 600, lineHeight: 1.4 }}>{n.title}</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 12, color: C.muted, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0, marginTop: 4 }}>▾</span>
+                </div>
+                {isOpen && (
+                  <div className="fadein" style={{ fontSize: 12, color: C.dim, lineHeight: 1.6, marginTop: 10, paddingLeft: n.isNew ? 16 : 0 }}>
+                    {n.desc}
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize:11, color:C.muted, lineHeight:1.4 }}>{a.role}</div>
-            </div>
+            </Card>
           </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── TAB 3: DEALS ──────────────────────────────────────────────
+function DealsTab() {
+  const [openSection, setOpenSection] = useState("inbox");
+
+  const sections = [
+    { key: "inbox", label: "Inbox", count: DEALS.inbox.length, deals: DEALS.inbox },
+    { key: "active", label: "In Progress", count: DEALS.active.length, deals: DEALS.active },
+    { key: "closed", label: "Closed", count: DEALS.closed.length, deals: DEALS.closed },
+  ];
+
+  return (
+    <div style={{ padding: "24px 20px 100px", overflowY: "auto", height: "100%" }}>
+      <div className="fu1" style={{ marginBottom: 16 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: C.cream, marginBottom: 4 }}>Deals</h2>
+        <div style={{ fontSize: 12, color: C.dim }}>Tracked by SCOUT &amp; DOLLAR</div>
+      </div>
+
+      {/* Pipeline summary */}
+      <div className="fu2" style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+        {sections.map(s => (
+          <button key={s.key} onClick={() => setOpenSection(s.key)} style={{
+            flex: 1, padding: "10px 8px", borderRadius: 10, border: "none", cursor: "pointer",
+            background: openSection === s.key ? C.blue + "18" : C.tag,
+            outline: openSection === s.key ? `1px solid ${C.blue}44` : `1px solid ${C.border}`,
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: openSection === s.key ? C.blue2 : C.cream }}>{s.count}</div>
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{s.label}</div>
+          </button>
         ))}
       </div>
 
-      {(typing || text) && (
-        <Card accent style={{ marginTop:14 }} className="fu">
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-            <div style={{
-              width:28, height:28, borderRadius:8,
-              background:`linear-gradient(135deg,${C.blue},${C.blue2})`,
-              display:"flex", alignItems:"center", justifyContent:"center", fontSize:14,
-            }}>🤖</div>
-            <span style={{ fontSize:11, fontWeight:800, color:C.blue, letterSpacing:"0.05em" }}>
-              MAWD {cur && `· ${cur.id}`}
-            </span>
+      {/* Deals list */}
+      {sections.find(s => s.key === openSection)?.deals.map((deal, i) => (
+        <Card key={i} className="fu" style={{ animationDelay: `${0.2 + i * 0.08}s`, marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, color: C.cream, fontWeight: 700, marginBottom: 3 }}>{deal.name}</div>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>{deal.type}</div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <Badge color={deal.color}>{deal.status}</Badge>
+                <AgentTag agent={deal.agent} small />
+              </div>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: C.blue2, flexShrink: 0 }}>{deal.amount}</div>
           </div>
-          {typing ? <Dots /> : (
-            <p style={{ fontSize:13, color:C.cream, lineHeight:1.65 }}>{text}</p>
-          )}
         </Card>
-      )}
+      ))}
 
-      {!active && (
-        <Card style={{ marginTop:14 }} className="fu4">
-          <p style={{ fontSize:13, color:C.muted, lineHeight:1.6 }}>
-            Each MAWD instance is fully containerized — no shared model, no data leakage. Trained on that talent&apos;s data only. The architecture an entertainment attorney would actually sign off on.
-          </p>
-        </Card>
-      )}
-
-      {done && <div style={{ marginTop:16 }}><Btn onClick={next}>See It Live →</Btn></div>}
-      {!done && !typing && !text && (
-        <p style={{ textAlign:"center", fontSize:12, color:C.muted, marginTop:12 }}>↑ Tap an agent above</p>
-      )}
+      {/* Total pipeline */}
+      <Card accent className="fu4" style={{ marginTop: 8, textAlign: "center" }}>
+        <div style={{ fontSize: 10, color: C.blue, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 4 }}>TOTAL PIPELINE VALUE</div>
+        <div style={{ fontSize: 28, fontWeight: 900, color: C.blue2 }}>$25,740</div>
+        <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>across 7 deals</div>
+      </Card>
     </div>
   );
 }
 
-// ── SCREEN 3 — The Proof ──────────────────────────────────────
-function S3({ next }) {
-  return (
-    <div style={{ padding:"32px 24px 100px", overflowY:"auto", height:"100%" }}>
-      <Label>Already Working</Label>
-      <h2 className="fu2" style={{
-        fontFamily:"'Playfair Display', serif",
-        fontSize:24, fontWeight:900, color:C.cream,
-        lineHeight:1.15, margin:"0 0 8px",
-      }}>
-        The founder is<br />
-        <Blue>the first install.</Blue>
-      </h2>
-      <p className="fu3" style={{ fontSize:13, color:C.dim, lineHeight:1.6, margin:"0 0 20px" }}>
-        Travis Atreo — founder, CEO, and professional artist — runs Fanded entirely on MAWD. Every feature built on himself before any other talent sees it.
-      </p>
+// ── TAB 4: FANS ───────────────────────────────────────────────
+function FansTab() {
+  const heatmap = [
+    [0.2, 0.3, 0.5, 0.8, 0.9, 0.4, 0.2],
+    [0.3, 0.4, 0.6, 0.7, 1.0, 0.5, 0.3],
+    [0.1, 0.3, 0.5, 0.6, 0.8, 0.3, 0.1],
+    [0.2, 0.4, 0.7, 0.9, 0.7, 0.4, 0.2],
+  ];
+  const days = ["M", "T", "W", "T", "F", "S", "S"];
 
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:16 }}>
+  return (
+    <div style={{ padding: "24px 20px 100px", overflowY: "auto", height: "100%" }}>
+      <div className="fu1" style={{ marginBottom: 16 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: C.cream, marginBottom: 4 }}>Fan Analytics</h2>
+        <div style={{ fontSize: 12, color: C.dim }}>Powered by PULSE</div>
+      </div>
+
+      {/* Overview stats */}
+      <div className="fu2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
         {[
-          { v:"148",  l:"Members",  s:"+6 this wk", c:C.blue2 },
-          { v:"96%",  l:"Retained", s:"4× avg",     c:C.green },
-          { v:"$740", l:"Mo. Rev",  s:"+12%",        c:C.blue },
-        ].map((s,i) => (
-          <div key={i} className="fu" style={{ animationDelay:`${0.2+i*0.1}s`, textAlign:"center" }}>
-            <div style={{ fontSize:22, fontWeight:800, color:s.c }}>{s.v}</div>
-            <div style={{ fontSize:10, color:C.green, fontWeight:600 }}>{s.s}</div>
-            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{s.l}</div>
-          </div>
+          { v: "2,340", l: "Total Members", c: C.blue2 },
+          { v: "+6.4%", l: "Mo. Growth", c: C.green },
+          { v: "94.2%", l: "Retention", c: C.blue },
+        ].map((s, i) => (
+          <Card key={i} style={{ textAlign: "center", padding: "12px 8px" }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: s.c }}>{s.v}</div>
+            <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{s.l}</div>
+          </Card>
         ))}
       </div>
 
-      {[
-        { emoji:"🌏", title:"Vietnam audience up 12% — organically",
-          body:"MAWD flagged the signal before Travis noticed. Someone over there is sharing his music. No ads. No push." },
-        { emoji:"💿", title:"Cover content outperforms originals 3:1",
-          body:"6 months of catalog data. MAWD identified the pattern and recommended a monthly cover strategy." },
-        { emoji:"🎂", title:"3 fan anniversaries auto-flagged",
-          body:"Sarah, Marcus, Alex — each hit 1 year. MAWD drafted personalized voice notes before Travis asked." },
-        { emoji:"🏫", title:"Cal State LA enterprise deal in pipeline",
-          body:"MAWD tracks deal state, preps the briefing before every meeting. It thinks ahead so Travis doesn\u2019t have to." },
-      ].map((item, i) => (
-        <Card key={i} className="fu" style={{ animationDelay:`${0.3+i*0.1}s`, marginBottom:10 }}>
-          <div style={{ display:"flex", gap:12 }}>
-            <span style={{ fontSize:19, flexShrink:0 }}>{item.emoji}</span>
-            <div>
-              <div style={{ fontSize:13, color:C.cream, fontWeight:700, marginBottom:4 }}>{item.title}</div>
-              <div style={{ fontSize:12, color:C.muted, lineHeight:1.5 }}>{item.body}</div>
+      {/* Top Cities */}
+      <Card className="fu3" style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: "0.05em" }}>TOP CITIES</div>
+        {FAN_CITIES.map((c, i) => (
+          <div key={i} style={{ marginBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <span style={{ fontSize: 12, color: C.cream }}>{c.city}</span>
+              <span style={{ fontSize: 12, color: C.dim }}>{c.count}</span>
             </div>
-          </div>
-        </Card>
-      ))}
-
-      <div style={{ marginTop:8 }}><Btn onClick={next}>The Opportunity →</Btn></div>
-    </div>
-  );
-}
-
-// ── SCREEN 4 — The Business ───────────────────────────────────
-function S4({ next }) {
-  return (
-    <div style={{ padding:"32px 24px 100px", overflowY:"auto", height:"100%" }}>
-      <Label>The Opportunity</Label>
-      <h2 className="fu2" style={{
-        fontFamily:"'Playfair Display', serif",
-        fontSize:24, fontWeight:900, color:C.cream,
-        lineHeight:1.15, margin:"0 0 8px",
-      }}>
-        <Blue>$250B+</Blue> flows through<br />
-        talent management<br />every year.
-      </h2>
-      <Divider />
-      <p className="fu3" style={{ fontSize:13, color:C.dim, lineHeight:1.65, marginBottom:20 }}>
-        None of it is automated. None of it is AI-native. None of it is owned by the talent. That&apos;s the market.
-      </p>
-
-      <Card accent className="fu3" style={{ marginBottom:14 }}>
-        <div style={{ fontSize:11, color:C.blue, fontWeight:700, marginBottom:10, letterSpacing:"0.06em" }}>LTV:CAC RATIO</div>
-        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12 }}>
-          <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>Streaming platform</div>
-            <div style={{ fontSize:22, fontWeight:900, color:C.red }}>~1:1</div>
-          </div>
-          <div style={{ width:1, background:C.border }} />
-          <div style={{ textAlign:"center" }}>
-            <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>Fanded (blended)</div>
-            <div style={{ fontSize:22, fontWeight:900, color:C.blue2 }}>20:1</div>
-          </div>
-        </div>
-        <div style={{ fontSize:12, color:C.muted, lineHeight:1.5 }}>
-          The artist already paid the CAC — decades of performing, recording, posting. Fanded just closes the loop on the economics.
-        </div>
-      </Card>
-
-      {[
-        { icon:"🎪", label:"100 clubs live", note:"Goal: 1,000 by EOY 2026" },
-        { icon:"📊", label:"$15K+ revenue through platform", note:"Before MAWD subscription fees launch" },
-        { icon:"⭐", label:"Manny Jacinto · Darren Hayes · Anna Akana", note:"Flagship talent on platform" },
-        { icon:"🏛️", label:"Cal State LA · Emerson · BCMNY · FPAC LA", note:"Active enterprise pipeline" },
-        { icon:"🤝", label:"Hyphen Capital · Jason Kwon (CSO, OpenAI)", note:"Pre-seed investors committed" },
-      ].map((item, i) => (
-        <Card key={i} className="fu" style={{ animationDelay:`${0.2+i*0.1}s`, marginBottom:9 }}>
-          <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-            <span style={{ fontSize:17 }}>{item.icon}</span>
-            <div>
-              <div style={{ fontSize:12, color:C.cream, fontWeight:700 }}>{item.label}</div>
-              <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{item.note}</div>
+            <div style={{ height: 4, background: C.border, borderRadius: 4, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", width: `${c.pct}%`, borderRadius: 4,
+                background: i === 0 ? `linear-gradient(90deg, ${C.blue}, ${C.blue2})` : C.blue + "55",
+              }} />
             </div>
-          </div>
-        </Card>
-      ))}
-
-      <div style={{ marginTop:12 }}><Btn onClick={next}>The Ask →</Btn></div>
-    </div>
-  );
-}
-
-// ── SCREEN 5 — The Ask ────────────────────────────────────────
-function S5() {
-  return (
-    <div style={{ padding:"32px 24px 100px", overflowY:"auto", height:"100%" }}>
-      <Label>Pre-Seed Round</Label>
-      <h2 className="fu2" style={{
-        fontFamily:"'Playfair Display', serif",
-        fontSize:32, fontWeight:900, color:C.cream,
-        lineHeight:1.1, margin:"0 0 6px",
-      }}>
-        <Blue>$500K</Blue><br />
-        to prove the model<br />at scale.
-      </h2>
-      <Divider />
-
-      <p className="fu3" style={{ fontSize:13, color:C.dim, lineHeight:1.65, marginBottom:20 }}>
-        Infrastructure is built. First install is live. We&apos;re raising to expand — not to start.
-      </p>
-
-      {[
-        { label:"Founder ops + salary",       pct:"30%", note:"$150K — keeps the machine running full-time" },
-        { label:"MAWD installs (5–10 talent)", pct:"30%", note:"Each becomes a replicable, documented template" },
-        { label:"Enterprise sales",            pct:"25%", note:"Close Cal State LA + 2 more contracts" },
-        { label:"Infrastructure + dev",        pct:"15%", note:"Kevin + server costs at scale" },
-      ].map((item, i) => (
-        <div key={i} className="fu" style={{ animationDelay:`${0.2+i*0.1}s`, marginBottom:14 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
-            <span style={{ fontSize:13, color:C.cream, fontWeight:600 }}>{item.label}</span>
-            <span style={{ fontSize:13, color:C.blue2, fontWeight:800 }}>{item.pct}</span>
-          </div>
-          <div style={{ height:4, background:C.border, borderRadius:4, overflow:"hidden" }}>
-            <div style={{
-              height:"100%", width:item.pct,
-              background:`linear-gradient(90deg,${C.blue},${C.blue2})`,
-              borderRadius:4,
-            }}/>
-          </div>
-          <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>{item.note}</div>
-        </div>
-      ))}
-
-      <Card accent className="fu5" style={{ marginBottom:12 }}>
-        <div style={{ fontSize:11, color:C.blue, fontWeight:700, marginBottom:10, letterSpacing:"0.06em" }}>
-          12-MONTH MILESTONES
-        </div>
-        {[
-          "Travis as validated, live MAWD install with real unit economics",
-          "5–10 talent accounts with measurable outcomes",
-          "One enterprise contract closed ($250K+ ARR)",
-          "$10K+ MRR to anchor a seed round from conviction, not desperation",
-        ].map((m, i) => (
-          <div key={i} style={{ display:"flex", gap:8, marginBottom:8 }}>
-            <span style={{ color:C.blue, flexShrink:0, fontSize:13 }}>→</span>
-            <span style={{ fontSize:12, color:C.dim, lineHeight:1.5 }}>{m}</span>
           </div>
         ))}
       </Card>
 
-      <Card accent className="fu6" style={{ marginBottom:12, textAlign:"center" }}>
-        <div style={{
-          fontFamily:"'Playfair Display', serif",
-          fontSize:15, color:C.cream, fontWeight:700,
-          lineHeight:1.55, marginBottom:14,
-        }}>
-          &ldquo;Every platform in history<br />was a better tool.<br />
-          <span style={{ color:C.blue2 }}>Fanded is the first team.&rdquo;</span>
+      {/* Demographics */}
+      <Card className="fu4" style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: "0.05em" }}>AGE DEMOGRAPHICS</div>
+        <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 10 }}>
+          <div style={{ width: "22%", background: C.blue + "55" }} />
+          <div style={{ width: "41%", background: C.blue }} />
+          <div style={{ width: "24%", background: C.blue2 }} />
+          <div style={{ width: "13%", background: C.blue + "33" }} />
         </div>
-        <div style={{ fontSize:13, color:C.muted, marginBottom:2 }}>travis@fanded.com</div>
-        <div style={{ fontSize:13, color:C.muted }}>mawd.fanded.com</div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          {[
+            { range: "18\u201321", pct: "22%" },
+            { range: "22\u201328", pct: "41%" },
+            { range: "29\u201335", pct: "24%" },
+            { range: "36+", pct: "13%" },
+          ].map((d, i) => (
+            <div key={i} style={{ textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: C.cream, fontWeight: 600 }}>{d.pct}</div>
+              <div style={{ fontSize: 10, color: C.muted }}>{d.range}</div>
+            </div>
+          ))}
+        </div>
       </Card>
 
-      <Card style={{ textAlign:"center", background:"#090912" }} className="fu6">
-        <div style={{ fontSize:10, color:C.muted, marginBottom:8, letterSpacing:"0.1em", textTransform:"uppercase" }}>
-          Advisors &amp; Investors
-        </div>
-        <div style={{ fontSize:12, color:C.dim, lineHeight:1.9 }}>
-          Ted Schilowitz · Co-founder, RED Digital Cinema<br />
-          Dr. Chris Mattmann · Head of AI, UCLA / Former CTIO, NASA JPL<br />
-          Eric Toda · Head of Communications, Meta<br />
-          Dave Lu · Hyphen Capital<br />
-          Jason Kwon · CSO, OpenAI
+      {/* Engagement heatmap */}
+      <Card className="fu5" style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: "0.05em" }}>ENGAGEMENT HEATMAP</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {heatmap.map((week, wi) => (
+            <div key={wi} style={{ display: "flex", gap: 4 }}>
+              {week.map((val, di) => (
+                <div key={di} style={{
+                  flex: 1, height: 20, borderRadius: 3,
+                  background: C.blue, opacity: val * 0.8 + 0.1,
+                }} />
+              ))}
+            </div>
+          ))}
+          <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
+            {days.map((d, i) => (
+              <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: C.muted }}>{d}</div>
+            ))}
+          </div>
         </div>
       </Card>
+
+      {/* Fan Spotlight */}
+      <div className="fu5" style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 10, letterSpacing: "0.05em" }}>FAN SPOTLIGHT</div>
+      {FAN_SPOTLIGHT.map((fan, i) => (
+        <Card key={i} className="fu" style={{ animationDelay: `${0.5 + i * 0.08}s`, marginBottom: 8 }}>
+          <div style={{ display: "flex", gap: 12 }}>
+            <span style={{ fontSize: 19, flexShrink: 0 }}>{fan.emoji}</span>
+            <div>
+              <div style={{ fontSize: 13, color: C.cream, fontWeight: 700, marginBottom: 3 }}>{fan.name}</div>
+              <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{fan.detail}</div>
+            </div>
+          </div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ── SPLASH ────────────────────────────────────────────────────
+function Splash({ onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2500);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <div onClick={onDone} style={{
+      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+      height: "100%", cursor: "pointer", textAlign: "center", padding: "0 28px",
+    }}>
+      <div className="fu1 glowpulse" style={{
+        width: 68, height: 68, borderRadius: 18,
+        background: `linear-gradient(135deg, ${C.blue}, ${C.blue2})`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 30, marginBottom: 24,
+      }}>🤖</div>
+      <h1 className="fu2" style={{
+        fontFamily: "'Playfair Display', serif", fontSize: 26, fontWeight: 900,
+        color: C.cream, lineHeight: 1.15, marginBottom: 10,
+      }}>
+        Welcome back, <span style={{ color: C.blue2 }}>Nia.</span>
+      </h1>
+      <p className="fu3" style={{ fontSize: 14, color: C.dim, lineHeight: 1.6, marginBottom: 20 }}>
+        MAWD has <span style={{ color: C.cream, fontWeight: 700 }}>4 updates</span> since you last checked.
+      </p>
+      <p className="fu4" style={{ fontSize: 12, color: C.muted }}>Tap anywhere to continue</p>
     </div>
   );
 }
 
 // ── SHELL ─────────────────────────────────────────────────────
-const SCREENS = [S0, S1, S2, S3, S4, S5];
-const NAV = [
-  { icon:"✦", label:"Intro" },
-  { icon:"⚡", label:"Problem" },
-  { icon:"🤖", label:"MAWD" },
-  { icon:"📊", label:"Live" },
-  { icon:"🌐", label:"Market" },
-  { icon:"💼", label:"Ask" },
+const TABS = [
+  { icon: "⌂", label: "Home", Component: HomeTab },
+  { icon: "🤖", label: "MAWD", Component: MawdTab },
+  { icon: "🔔", label: "Alerts", Component: AlertsTab },
+  { icon: "🤝", label: "Deals", Component: DealsTab },
+  { icon: "👥", label: "Fans", Component: FansTab },
 ];
 
 export default function App() {
-  const [screen, setScreen] = useState(0);
-  const next = () => setScreen(s => Math.min(SCREENS.length - 1, s + 1));
-  const Screen = SCREENS[screen];
+  const [showSplash, setShowSplash] = useState(true);
+  const [activeTab, setActiveTab] = useState(0);
+  const Tab = TABS[activeTab].Component;
 
   return (
-    <div style={{ background:C.bg, minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", fontFamily:"'DM Sans', system-ui, sans-serif" }}>
+    <div style={{
+      background: C.bg, minHeight: "100vh",
+      display: "flex", flexDirection: "column", alignItems: "center",
+      fontFamily: "'DM Sans', system-ui, sans-serif",
+    }}>
       <style>{ANIM}</style>
-      <div style={{ width:"100%", maxWidth:390, minHeight:"100vh", background:C.bg, position:"relative", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+      <div style={{
+        width: "100%", maxWidth: 390, minHeight: "100vh", background: C.bg,
+        position: "relative", display: "flex", flexDirection: "column", overflow: "hidden",
+      }}>
 
-        {/* Header */}
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 22px 12px", borderBottom:`1px solid ${C.border}`, flexShrink:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:26, height:26, borderRadius:7, background:`linear-gradient(135deg,${C.blue},${C.blue2})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>🤖</div>
-            <span style={{ fontSize:12, fontWeight:800, color:C.cream, letterSpacing:"0.03em" }}>fanded</span>
-          </div>
-          <div style={{ display:"flex", gap:5 }}>
-            {SCREENS.map((_,i) => (
-              <div key={i} onClick={() => setScreen(i)} style={{
-                width: i===screen ? 18 : 6, height:6, borderRadius:3, cursor:"pointer",
-                background: i===screen ? `linear-gradient(90deg,${C.blue},${C.blue2})` : i<screen ? C.blue+"55" : C.border,
-                transition:"all 0.3s ease",
-              }}/>
-            ))}
-          </div>
-          <span style={{ fontSize:11, color:C.muted }}>{screen+1}/{SCREENS.length}</span>
-        </div>
-
-        {/* Content */}
-        <div key={screen} style={{ flex:1, overflowY:"auto", position:"relative" }}>
-          <Screen next={next} />
-        </div>
-
-        {/* Bottom Nav */}
-        <div style={{
-          position:"absolute", bottom:0, left:0, right:0,
-          background:`${C.bg}EE`, backdropFilter:"blur(12px)",
-          borderTop:`1px solid ${C.border}`,
-          display:"flex", justifyContent:"space-around",
-          padding:"9px 0 13px",
-        }}>
-          {NAV.map((n,i) => (
-            <button key={i} onClick={() => setScreen(i)} style={{
-              background:"none", border:"none", cursor:"pointer",
-              display:"flex", flexDirection:"column", alignItems:"center", gap:3, padding:"0 8px",
+        {showSplash ? (
+          <Splash onDone={() => setShowSplash(false)} />
+        ) : (
+          <>
+            {/* Demo Banner */}
+            <div style={{
+              background: C.blue + "12", borderBottom: `1px solid ${C.blue}22`,
+              padding: "5px 16px", textAlign: "center", flexShrink: 0,
             }}>
-              <span style={{ fontSize:17, opacity: i===screen ? 1 : 0.35 }}>{n.icon}</span>
-              <span style={{
-                fontSize:9, letterSpacing:"0.07em",
-                color: i===screen ? C.blue : C.muted,
-                fontWeight: i===screen ? 700 : 400,
-                textTransform:"uppercase",
-              }}>{n.label}</span>
-            </button>
-          ))}
-        </div>
+              <span style={{ fontSize: 9, fontWeight: 700, color: C.blue, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                Demo — All data is synthetic
+              </span>
+            </div>
+
+            {/* Header */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "12px 20px 10px", borderBottom: `1px solid ${C.border}`, flexShrink: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: 7,
+                  background: `linear-gradient(135deg, ${C.blue}, ${C.blue2})`,
+                  display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13,
+                }}>🤖</div>
+                <span style={{ fontSize: 12, fontWeight: 800, color: C.cream, letterSpacing: "0.03em" }}>MAWD</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, color: C.dim }}>Nia&apos;s workspace</span>
+                <div style={{
+                  width: 24, height: 24, borderRadius: "50%",
+                  background: C.purple, display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 10, fontWeight: 800, color: C.cream,
+                }}>N</div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div key={activeTab} style={{ flex: 1, overflowY: "auto", position: "relative" }}>
+              <Tab />
+            </div>
+
+            {/* Bottom Nav */}
+            <div style={{
+              position: "absolute", bottom: 0, left: 0, right: 0,
+              background: `${C.bg}EE`, backdropFilter: "blur(12px)",
+              borderTop: `1px solid ${C.border}`,
+              display: "flex", justifyContent: "space-around",
+              padding: "8px 0 14px",
+            }}>
+              {TABS.map((tab, i) => (
+                <button key={i} onClick={() => setActiveTab(i)} style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3, padding: "0 8px",
+                }}>
+                  <span style={{ fontSize: 17, opacity: i === activeTab ? 1 : 0.35 }}>{tab.icon}</span>
+                  <span style={{
+                    fontSize: 9, letterSpacing: "0.07em",
+                    color: i === activeTab ? C.blue : C.muted,
+                    fontWeight: i === activeTab ? 700 : 400,
+                    textTransform: "uppercase",
+                  }}>{tab.label}</span>
+                  {i === 2 && (
+                    <div style={{
+                      position: "absolute", top: 6, marginLeft: 14,
+                      width: 6, height: 6, borderRadius: "50%", background: C.blue,
+                    }} />
+                  )}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
