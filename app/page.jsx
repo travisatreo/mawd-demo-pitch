@@ -5,14 +5,14 @@ import { useState } from "react";
 const C = {
   bg: "#07070F",
   cream: "#F5F1EA",
-  gold: "#C4953A",
-  gold2: "#E8B84B",
+  gold: "#3BADE4",
+  gold2: "#5BC0F0",
   muted: "rgba(245, 241, 234, 0.55)",
   body: "rgba(245, 241, 234, 0.88)",
   dim: "rgba(245, 241, 234, 0.35)",
-  rule: "rgba(196, 149, 58, 0.2)",
-  green: "#2ECC71",
-  red: "#E74C3C",
+  rule: "rgba(59, 173, 228, 0.15)",
+  green: "#34C759",
+  red: "#FF453A",
 };
 
 const serif = "'EB Garamond', Georgia, serif";
@@ -255,7 +255,7 @@ function S2({ next }) {
             className="fu" style={{
               animationDelay:`${0.2+i*0.08}s`, cursor:"pointer",
               padding:"16px 14px",
-              background: active===a.id ? "rgba(196, 149, 58, 0.08)" : "transparent",
+              background: active===a.id ? "rgba(59, 173, 228, 0.08)" : "transparent",
               borderRight: i % 2 === 0 ? `1px solid ${C.rule}` : "none",
               borderBottom: i < 4 ? `1px solid ${C.rule}` : "none",
               transition: "background 0.3s ease",
