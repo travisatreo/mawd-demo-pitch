@@ -6,5 +6,5 @@
 
 body {
   background: #07070F;
-  font-family: var(--font-garamond), 'EB Garamond', Georgia, serif;
+  font-family: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
 }
