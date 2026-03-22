@@ -1,15 +1,17 @@
-import { DM_Sans, Playfair_Display } from "next/font/google";
+import { EB_Garamond, Playfair_Display } from "next/font/google";
 import "./globals.css";
 
-const dmSans = DM_Sans({
+const garamond = EB_Garamond({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-dm-sans",
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
+  variable: "--font-garamond",
 });
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   weight: ["700", "900"],
+  style: ["normal", "italic"],
   variable: "--font-playfair",
 });
 
@@ -21,7 +23,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${dmSans.variable} ${playfair.variable}`}>
+      <body className={`${garamond.variable} ${playfair.variable}`}>
         {children}
       </body>
     </html>
