@@ -120,18 +120,25 @@ const DEALS = {
   ],
 };
 
-const FAN_CITIES = [
-  { city: "Los Angeles", count: 340, pct: 100 },
-  { city: "Manila", count: 280, pct: 82 },
-  { city: "Ho Chi Minh City", count: 195, pct: 57 },
-  { city: "New York", count: 170, pct: 50 },
-  { city: "London", count: 145, pct: 43 },
+const FAN_SOURCES = [
+  { platform: "Spotify", listeners: "18.4K", converted: 420, rate: "2.3%", color: "#1DB954" },
+  { platform: "Instagram", followers: "12.1K", converted: 680, rate: "5.6%", color: "#E1306C" },
+  { platform: "YouTube", subs: "8.2K", converted: 310, rate: "3.8%", color: "#FF0000" },
+  { platform: "TikTok", followers: "22.6K", converted: 190, rate: "0.8%", color: "#69C9D0" },
 ];
 
-const FAN_SPOTLIGHT = [
-  { name: "Maya R.", detail: "1-year anniversary tomorrow. Top 2% engagement. MAWD drafted a voice note.", emoji: "🎂" },
-  { name: "Jordan T.", detail: "Joined 3 days ago from Chicago. Already purchased merch. Premium tier.", emoji: "⭐" },
-  { name: "Alex K.", detail: "11 months. Shared your music 47 times. Potential ambassador candidate.", emoji: "📣" },
+const CONVERSION_FUNNEL = [
+  { stage: "Total audience reach", count: "61.3K", pct: 100, color: C.muted },
+  { stage: "Visited Fanded page", count: "4,820", pct: 38, color: C.dim },
+  { stage: "Started signup", count: "3,100", pct: 24, color: C.blue },
+  { stage: "Active members", count: "2,340", pct: 18, color: C.blue2 },
+  { stage: "Paying members", count: "1,890", pct: 15, color: C.green },
+];
+
+const MEMBER_SPOTLIGHT = [
+  { name: "Maya R.", detail: "Converted from Spotify. 1-year anniversary tomorrow. Top 2% engagement. Upgraded to premium after 3 months.", emoji: "🎂", source: "Spotify" },
+  { name: "Jordan T.", detail: "Came from Instagram DM link. Joined 3 days ago. Already purchased merch. $42 LTV in first week.", emoji: "⭐", source: "Instagram" },
+  { name: "Alex K.", detail: "YouTube subscriber \u2192 Fanded member. 11 months. Shared invite link 47 times \u2014 responsible for 12 conversions.", emoji: "📣", source: "YouTube" },
 ];
 
 const REVENUE_MONTHS = [
@@ -525,110 +532,109 @@ function DealsTab() {
   );
 }
 
-// ── TAB 4: FANS ───────────────────────────────────────────────
+// ── TAB 4: CLUB ───────────────────────────────────────────────
 function FansTab() {
-  const heatmap = [
-    [0.2, 0.3, 0.5, 0.8, 0.9, 0.4, 0.2],
-    [0.3, 0.4, 0.6, 0.7, 1.0, 0.5, 0.3],
-    [0.1, 0.3, 0.5, 0.6, 0.8, 0.3, 0.1],
-    [0.2, 0.4, 0.7, 0.9, 0.7, 0.4, 0.2],
-  ];
-  const days = ["M", "T", "W", "T", "F", "S", "S"];
-
   return (
     <div style={{ padding: "24px 20px 100px", overflowY: "auto", height: "100%" }}>
       <div className="fu1" style={{ marginBottom: 16 }}>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: C.cream, marginBottom: 4 }}>Fan Analytics</h2>
-        <div style={{ fontSize: 12, color: C.dim }}>Powered by PULSE</div>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 900, color: C.cream, marginBottom: 4 }}>Fanded Club</h2>
+        <div style={{ fontSize: 12, color: C.dim }}>Convert fans into members · Powered by PULSE</div>
       </div>
 
-      {/* Overview stats */}
+      {/* Conversion overview */}
+      <div className="fu2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+        <Card style={{ textAlign: "center", padding: "14px 8px" }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.blue2 }}>61.3K</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>Total Audience</div>
+          <div style={{ fontSize: 10, color: C.dim, marginTop: 2 }}>across all platforms</div>
+        </Card>
+        <Card style={{ textAlign: "center", padding: "14px 8px" }}>
+          <div style={{ fontSize: 22, fontWeight: 800, color: C.green }}>2,340</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>Fanded Members</div>
+          <div style={{ fontSize: 10, color: C.green, marginTop: 2 }}>3.8% converted</div>
+        </Card>
+      </div>
+
       <div className="fu2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
         {[
-          { v: "2,340", l: "Total Members", c: C.blue2 },
-          { v: "+6.4%", l: "Mo. Growth", c: C.green },
           { v: "94.2%", l: "Retention", c: C.blue },
+          { v: "$22.40", l: "Avg LTV", c: C.blue2 },
+          { v: "+142", l: "This Month", c: C.green },
         ].map((s, i) => (
-          <Card key={i} style={{ textAlign: "center", padding: "12px 8px" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: s.c }}>{s.v}</div>
-            <div style={{ fontSize: 10, color: C.muted, marginTop: 4 }}>{s.l}</div>
+          <Card key={i} style={{ textAlign: "center", padding: "10px 6px" }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: s.c }}>{s.v}</div>
+            <div style={{ fontSize: 9, color: C.muted, marginTop: 3 }}>{s.l}</div>
           </Card>
         ))}
       </div>
 
-      {/* Top Cities */}
+      {/* Conversion funnel */}
       <Card className="fu3" style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: "0.05em" }}>TOP CITIES</div>
-        {FAN_CITIES.map((c, i) => (
-          <div key={i} style={{ marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 14, letterSpacing: "0.05em" }}>CONVERSION FUNNEL</div>
+        {CONVERSION_FUNNEL.map((step, i) => (
+          <div key={i} style={{ marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ fontSize: 12, color: C.cream }}>{c.city}</span>
-              <span style={{ fontSize: 12, color: C.dim }}>{c.count}</span>
+              <span style={{ fontSize: 12, color: C.cream }}>{step.stage}</span>
+              <span style={{ fontSize: 12, color: step.color, fontWeight: 700 }}>{step.count}</span>
             </div>
-            <div style={{ height: 4, background: C.border, borderRadius: 4, overflow: "hidden" }}>
+            <div style={{ height: 6, background: C.border, borderRadius: 4, overflow: "hidden" }}>
               <div style={{
-                height: "100%", width: `${c.pct}%`, borderRadius: 4,
-                background: i === 0 ? `linear-gradient(90deg, ${C.blue}, ${C.blue2})` : C.blue + "55",
+                height: "100%", width: `${step.pct}%`, borderRadius: 4,
+                background: step.color, transition: "width 0.6s ease",
               }} />
             </div>
           </div>
         ))}
       </Card>
 
-      {/* Demographics */}
+      {/* Platform sources */}
       <Card className="fu4" style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: "0.05em" }}>AGE DEMOGRAPHICS</div>
-        <div style={{ display: "flex", height: 8, borderRadius: 4, overflow: "hidden", marginBottom: 10 }}>
-          <div style={{ width: "22%", background: C.blue + "55" }} />
-          <div style={{ width: "41%", background: C.blue }} />
-          <div style={{ width: "24%", background: C.blue2 }} />
-          <div style={{ width: "13%", background: C.blue + "33" }} />
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          {[
-            { range: "18\u201321", pct: "22%" },
-            { range: "22\u201328", pct: "41%" },
-            { range: "29\u201335", pct: "24%" },
-            { range: "36+", pct: "13%" },
-          ].map((d, i) => (
-            <div key={i} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: C.cream, fontWeight: 600 }}>{d.pct}</div>
-              <div style={{ fontSize: 10, color: C.muted }}>{d.range}</div>
+        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 14, letterSpacing: "0.05em" }}>CONVERTING FROM</div>
+        {FAN_SOURCES.map((src, i) => (
+          <div key={i} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "10px 0",
+            borderBottom: i < FAN_SOURCES.length - 1 ? `1px solid ${C.border}` : "none",
+          }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: src.color }} />
+                <span style={{ fontSize: 13, color: C.cream, fontWeight: 600 }}>{src.platform}</span>
+              </div>
+              <span style={{ fontSize: 11, color: C.muted, marginLeft: 14 }}>
+                {src.listeners || src.followers || src.subs} reach
+              </span>
             </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Engagement heatmap */}
-      <Card className="fu5" style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 12, letterSpacing: "0.05em" }}>ENGAGEMENT HEATMAP</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {heatmap.map((week, wi) => (
-            <div key={wi} style={{ display: "flex", gap: 4 }}>
-              {week.map((val, di) => (
-                <div key={di} style={{
-                  flex: 1, height: 20, borderRadius: 3,
-                  background: C.blue, opacity: val * 0.8 + 0.1,
-                }} />
-              ))}
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: C.blue2 }}>{src.converted}</div>
+              <div style={{ fontSize: 10, color: C.green }}>{src.rate} conv.</div>
             </div>
-          ))}
-          <div style={{ display: "flex", gap: 4, marginTop: 2 }}>
-            {days.map((d, i) => (
-              <div key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: C.muted }}>{d}</div>
-            ))}
           </div>
-        </div>
+        ))}
       </Card>
 
-      {/* Fan Spotlight */}
-      <div className="fu5" style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 10, letterSpacing: "0.05em" }}>FAN SPOTLIGHT</div>
-      {FAN_SPOTLIGHT.map((fan, i) => (
+      {/* MAWD insight */}
+      <Card accent className="fu5" style={{ marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <AgentTag agent="PULSE" />
+          <span style={{ fontSize: 10, color: C.muted }}>Insight</span>
+        </div>
+        <p style={{ fontSize: 13, color: C.cream, lineHeight: 1.65, margin: 0 }}>
+          Instagram converts at 5.6% — 2.4&times; higher than any other platform. Your IG Stories with the Fanded link in bio drive 72% of signups. MAWD recommends a weekly Story prompt to push conversion to 7%.
+        </p>
+      </Card>
+
+      {/* Member spotlight */}
+      <div className="fu5" style={{ fontSize: 11, fontWeight: 700, color: C.muted, marginBottom: 10, letterSpacing: "0.05em" }}>MEMBER SPOTLIGHT</div>
+      {MEMBER_SPOTLIGHT.map((fan, i) => (
         <Card key={i} className="fu" style={{ animationDelay: `${0.5 + i * 0.08}s`, marginBottom: 8 }}>
           <div style={{ display: "flex", gap: 12 }}>
             <span style={{ fontSize: 19, flexShrink: 0 }}>{fan.emoji}</span>
             <div>
-              <div style={{ fontSize: 13, color: C.cream, fontWeight: 700, marginBottom: 3 }}>{fan.name}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                <span style={{ fontSize: 13, color: C.cream, fontWeight: 700 }}>{fan.name}</span>
+                <Badge color={C.muted}>{fan.source}</Badge>
+              </div>
               <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>{fan.detail}</div>
             </div>
           </div>
@@ -676,7 +682,7 @@ const TABS = [
   { icon: "🤖", label: "MAWD", Component: MawdTab },
   { icon: "🔔", label: "Alerts", Component: AlertsTab },
   { icon: "🤝", label: "Deals", Component: DealsTab },
-  { icon: "👥", label: "Fans", Component: FansTab },
+  { icon: "👥", label: "Club", Component: FansTab },
 ];
 
 export default function App() {
